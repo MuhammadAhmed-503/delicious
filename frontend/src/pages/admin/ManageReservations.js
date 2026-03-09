@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { reservationService } from '../../services/apiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { toast } from 'react-toastify';
-import { FaCalendarAlt, FaUser, FaPhone, FaEnvelope, FaClock, FaUsers, FaStickyNote, FaTrash } from 'react-icons/fa';
+import { FaCalendarAlt, FaUser, FaPhone, FaEnvelope, FaUsers, FaStickyNote, FaTrash } from 'react-icons/fa';
 
 const ManageReservations = () => {
   const [reservations, setReservations] = useState([]);
