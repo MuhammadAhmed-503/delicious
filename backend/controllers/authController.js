@@ -84,6 +84,13 @@ exports.login = async (req, res) => {
       });
     }
 
+    if (!user.password) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
     // Check if password matches
     const isMatch = await user.comparePassword(password);
 
@@ -96,8 +103,8 @@ exports.login = async (req, res) => {
 
     // Auto-upgrade to admin if email is admin email and not already admin
     if (user.email === 'admin@restaurant.com' && user.role !== 'admin') {
+      await User.findByIdAndUpdate(user._id, { role: 'admin' });
       user.role = 'admin';
-      await user.save();
     }
 
     const token = generateToken(user._id);

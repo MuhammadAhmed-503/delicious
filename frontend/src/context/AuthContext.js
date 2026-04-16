@@ -3,6 +3,8 @@ import api from '../services/api';
 import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
+const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+const ADMIN_ACTIVITY_KEY = 'adminLastActivityAt';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -23,11 +25,68 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
 
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+
+      // Admin sessions expire after inactivity.
+      if (parsedUser.role === 'admin') {
+        const lastActivity = Number(localStorage.getItem(ADMIN_ACTIVITY_KEY) || 0);
+        const isExpired = !lastActivity || Date.now() - lastActivity > ADMIN_IDLE_TIMEOUT_MS;
+
+        if (isExpired) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem(ADMIN_ACTIVITY_KEY);
+        } else {
+          setToken(storedToken);
+          setUser(parsedUser);
+        }
+      } else {
+        setToken(storedToken);
+        setUser(parsedUser);
+      }
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (!token || user?.role !== 'admin') {
+      return undefined;
+    }
+
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    let timeoutId;
+
+    const forceAdminLogout = () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem(ADMIN_ACTIVITY_KEY);
+      setToken(null);
+      setUser(null);
+      toast.info('Admin session expired due to inactivity. Please log in again.');
+    };
+
+    const resetAdminTimer = () => {
+      localStorage.setItem(ADMIN_ACTIVITY_KEY, String(Date.now()));
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(forceAdminLogout, ADMIN_IDLE_TIMEOUT_MS);
+    };
+
+    resetAdminTimer();
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetAdminTimer);
+    });
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, resetAdminTimer);
+      });
+    };
+  }, [token, user]);
 
   const login = async (email, password) => {
     try {
@@ -36,6 +95,12 @@ export const AuthProvider = ({ children }) => {
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+
+      if (user.role === 'admin') {
+        localStorage.setItem(ADMIN_ACTIVITY_KEY, String(Date.now()));
+      } else {
+        localStorage.removeItem(ADMIN_ACTIVITY_KEY);
+      }
 
       setToken(token);
       setUser(user);
@@ -57,6 +122,12 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
+      if (user.role === 'admin') {
+        localStorage.setItem(ADMIN_ACTIVITY_KEY, String(Date.now()));
+      } else {
+        localStorage.removeItem(ADMIN_ACTIVITY_KEY);
+      }
+
       setToken(token);
       setUser(user);
 
@@ -72,6 +143,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem(ADMIN_ACTIVITY_KEY);
     setToken(null);
     setUser(null);
     toast.info('Logged out successfully');

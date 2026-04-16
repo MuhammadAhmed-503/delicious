@@ -32,6 +32,13 @@ exports.uploadImage = async (req, res) => {
   try {
     let imageUrl = req.body.imageUrl;
 
+    if (!req.file && !imageUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide an image file or image URL',
+      });
+    }
+
     // If file is uploaded, upload to Cloudinary
     if (req.file) {
       const result = await new Promise((resolve, reject) => {

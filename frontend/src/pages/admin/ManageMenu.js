@@ -98,7 +98,7 @@ const ManageMenu = () => {
       });
       fetchFoods();
     } catch (error) {
-      toast.error('Failed to save food item');
+      toast.error(error.response?.data?.message || 'Failed to save food item');
     }
   };
 
@@ -125,7 +125,7 @@ const ManageMenu = () => {
       toast.success('Food item deleted successfully');
       fetchFoods();
     } catch (error) {
-      toast.error('Failed to delete food item');
+      toast.error(error.response?.data?.message || 'Failed to delete food item');
     }
   };
 

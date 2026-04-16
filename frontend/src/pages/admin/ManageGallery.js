@@ -8,6 +8,7 @@ const ManageGallery = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [formData, setFormData] = useState({
@@ -56,6 +57,9 @@ const ManageGallery = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (submitting) return;
+    setSubmitting(true);
+
     try {
       const submitData = new FormData();
       submitData.append('title', formData.title);
@@ -80,7 +84,9 @@ const ManageGallery = () => {
       });
       fetchImages();
     } catch (error) {
-      toast.error('Failed to upload image');
+      toast.error(error.response?.data?.message || 'Failed to upload image');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -92,7 +98,7 @@ const ManageGallery = () => {
       toast.success('Image deleted successfully');
       fetchImages();
     } catch (error) {
-      toast.error('Failed to delete image');
+      toast.error(error.response?.data?.message || 'Failed to delete image');
     }
   };
 
@@ -163,6 +169,7 @@ const ManageGallery = () => {
                   accept="image/*"
                   onChange={handleFileChange}
                   required
+                  disabled={submitting}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
                 />
                 {imagePreview && (
@@ -180,6 +187,7 @@ const ManageGallery = () => {
                   value={formData.title}
                   onChange={handleChange}
                   required
+                  disabled={submitting}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
                   placeholder="Image title"
                 />
@@ -191,6 +199,7 @@ const ManageGallery = () => {
                   value={formData.category}
                   onChange={handleChange}
                   required
+                  disabled={submitting}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
                 >
                   {categories.map((cat) => (
@@ -199,10 +208,19 @@ const ManageGallery = () => {
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="submit" className="flex-1 bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition font-semibold">
-                  Upload
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Uploading...' : 'Upload'}
                 </button>
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg hover:bg-gray-200 transition font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  disabled={submitting}
+                  className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg hover:bg-gray-200 transition font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                >
                   Cancel
                 </button>
               </div>
